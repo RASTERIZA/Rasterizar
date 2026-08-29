@@ -19,7 +19,7 @@ export const config = {
   empresa: {
     nombre: process.env.EMPRESA_NOMBRE || 'Rasterizar S.A.C.',
     contacto: process.env.EMPRESA_CONTACTO || 'Jorge Luis Pampas Sarmiento',
-    telefono: process.env.EMPRESA_TELEFONO || '914858708',
+    telefono: process.env.EMPRESA_TELEFONO || '912980371',
     correo: process.env.EMPRESA_CORREO || 'proyectos@rasteriza.com'
   },
   claude: {
