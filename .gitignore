@@ -34,3 +34,7 @@ auth_info*/
 # Estado del bot (pausas, borradores pendientes)
 data/*
 !data/.gitkeep
+
+# Archivos de prueba locales
+.env.*
+!.env.example
