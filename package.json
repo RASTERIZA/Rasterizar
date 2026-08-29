@@ -1,0 +1,35 @@
+{
+  "name": "rasterizar-whatsapp",
+  "version": "1.0.0",
+  "description": "Bot de WhatsApp de Rasterizar S.A.C. con control desde el celular del dueño",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "node src/index.js",
+    "vincular": "node src/index.js",
+    "salir": "rm -rf auth && echo 'Sesión borrada. Ejecuta: npm run vincular'",
+    "pm2": "npx pm2 start ecosystem.config.cjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RASTERIZA/Rasterizar.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/RASTERIZA/Rasterizar/issues"
+  },
+  "homepage": "https://github.com/RASTERIZA/Rasterizar#readme",
+  "type": "module",
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "^6.7.24",
+    "dotenv": "^16.6.1",
+    "pino": "^9.14.0",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

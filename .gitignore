@@ -21,3 +21,16 @@ rad.json
 *.flf
 #Test results file
 TestResults.xml
+### Node / Bot de WhatsApp ###
+node_modules/
+npm-debug.log*
+.env
+
+# ¡NUNCA subir esto! Son las credenciales de tu sesión de WhatsApp:
+# quien las tenga puede leer y escribir por tu número.
+auth/
+auth_info*/
+
+# Estado del bot (pausas, borradores pendientes)
+data/*
+!data/.gitkeep
