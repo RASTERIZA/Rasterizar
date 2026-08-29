@@ -35,6 +35,32 @@ if (!store.get().modo) store.set({ modo: config.modo })
 let intentos = 0
 let cerrando = false
 let sock = null
+let vigilante = null
+
+/**
+ * Vigilante de conexión.
+ *
+ * Si WhatsApp no responde, la librería puede quedarse muda y el proceso
+ * moriría sin decir nada. Este temporizador garantiza que siempre haya un
+ * mensaje en pantalla y que se reintente.
+ */
+function armarVigilante (segundos = 30) {
+  clearTimeout(vigilante)
+  vigilante = setTimeout(() => {
+    if (cerrando) return
+    console.error(`\n⚠️  Llevo ${segundos} s sin poder conectar con WhatsApp.`)
+    console.error('   Suele ser: sin internet, una VPN activa, o un firewall/proxy')
+    console.error('   de la oficina que bloquea WhatsApp. Pruébalo en la misma red')
+    console.error('   donde te funciona WhatsApp Web.')
+    console.error('   Sigo reintentando, no hace falta que hagas nada.\n')
+    try { sock?.end(new Error('sin conexión con WhatsApp')) } catch {}
+  }, segundos * 1000)
+}
+
+function soltarVigilante () {
+  clearTimeout(vigilante)
+  vigilante = null
+}
 
 /** Envía un texto; con `natural` imita el ritmo de una persona escribiendo. */
 async function enviar (jid, texto, natural = false) {
@@ -72,6 +98,7 @@ async function iniciar () {
   })
 
   sock.ev.on('creds.update', saveCreds)
+  armarVigilante()
 
   // ---- Vinculación por código de 8 dígitos ------------------------------
   if (!sock.authState.creds.registered && config.login === 'codigo') {
@@ -108,6 +135,7 @@ El código vence en pocos minutos. Si expira, vuelve a ejecutar: npm run vincula
 
     if (connection === 'open') {
       intentos = 0
+      soltarVigilante()
       const propio = jidNormalizedUser(sock.user.id)
       const panel = config.duenio ? `${config.duenio}@s.whatsapp.net` : propio
       bot.setPanel(panel)
@@ -147,6 +175,7 @@ El código vence en pocos minutos. Si expira, vuelve a ejecutar: npm run vincula
       if (cerrando) return
 
       intentos++
+      soltarVigilante()
       const ms = Math.min(60_000, 2000 * 2 ** Math.min(intentos, 5))
       console.warn(`⚠️  Conexión cerrada (${codigo ?? 'desconocido'}). Reintento ${intentos} en ${ms / 1000}s`)
       setTimeout(() => iniciar().catch(err => console.error('[reconexión]', err?.message)), ms)
@@ -172,6 +201,7 @@ El código vence en pocos minutos. Si expira, vuelve a ejecutar: npm run vincula
 for (const sig of ['SIGINT', 'SIGTERM']) {
   process.on(sig, () => {
     cerrando = true
+    soltarVigilante()
     console.log('\n👋 Cerrando el bot. La sesión queda guardada en ./auth')
     process.exit(0)
   })
