@@ -8,11 +8,13 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 process.env.WA_ESTADO = 'data/test-duenio.json'
+process.env.WA_HISTORIAL = 'data/test-duenio-hist.json'
 process.env.WA_NUMERO = '51912980371'
 process.env.WA_DUENIO = '51914858708'
 
 const { crearBot } = await import('../src/bot.js')
 const { store } = await import('../src/store.js')
+const { historial } = await import('../src/historial.js')
 
 const PANEL = '51914858708@s.whatsapp.net'
 const CLIENTE = '51987654321@s.whatsapp.net'
@@ -33,7 +35,7 @@ function nuevoBot () {
 }
 
 test.beforeEach(() => store.set({ modo: 'aprobacion', encendido: true, pausados: {}, pendientes: {} }))
-test.after(() => { store.detener(); fs.rmSync('data/test-duenio.json', { force: true }) })
+test.after(() => { store.detener(); historial.detener(); fs.rmSync('data/test-duenio.json', { force: true }); fs.rmSync('data/test-duenio-hist.json', { force: true }) })
 
 test('los comandos del segundo número sí se obedecen', async () => {
   const { bot, alPanel } = nuevoBot()

@@ -22,6 +22,16 @@ export const config = {
     telefono: process.env.EMPRESA_TELEFONO || '914858708',
     correo: process.env.EMPRESA_CORREO || 'proyectos@rasteriza.com'
   },
+  claude: {
+    // Por defecto el modelo más capaz. Para gastar menos, pon
+    // WA_MODELO=claude-haiku-4-5 en el .env
+    modelo: process.env.WA_MODELO || 'claude-opus-5',
+    esfuerzo: ['low', 'medium', 'high', 'xhigh', 'max'].includes(process.env.WA_ESFUERZO)
+      ? process.env.WA_ESFUERZO
+      : 'medium',
+    // Cuántos mensajes del chat se le pasan como contexto
+    memoria: num(process.env.WA_MEMORIA, 20)
+  },
   horario: {
     inicio: num(process.env.HORARIO_INICIO, 8),
     fin: num(process.env.HORARIO_FIN, 19)

@@ -8,6 +8,7 @@
  */
 import { config } from './config.js'
 import { store } from './store.js'
+import { claudeActivo, preciosSinLlenar } from './claude.js'
 
 const PREFIJOS = ['.', '/', '!']
 
@@ -22,6 +23,10 @@ export const MENU = `📋 *PANEL RASTERIZAR*
 .on — activar el bot
 .off — apagar el bot (nadie recibe respuesta)
 .estado — ver cómo está todo
+
+*Que Claude cotice*
+.cotiza 51987654321 — relee ese chat y redacta
+.cotiza 51987654321 | agrégale instalación y 10% dscto
 
 *Por cliente*
 .pausa 51987654321 120 — callar ese chat 120 min
@@ -59,6 +64,10 @@ function resumenEstado () {
     `Bot: ${e.encendido ? '🟢 encendido' : '🔴 apagado'}`,
     `Modo: *${e.modo}*`,
     `Número: ${config.numero}`,
+    `Redacta: ${claudeActivo() ? `🤖 Claude (${config.claude.modelo})` : '📄 plantillas fijas'}`,
+    ...(claudeActivo() && preciosSinLlenar()
+      ? ['⚠️ *negocio/precios.md está sin llenar* — Claude no podrá cotizar cifras']
+      : []),
     '',
     `Chats en pausa: ${pausados.length || 'ninguno'}`,
     ...pausados,

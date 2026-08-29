@@ -7,10 +7,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 process.env.WA_ESTADO = 'data/test-flujo.json'
+process.env.WA_HISTORIAL = 'data/test-flujo-hist.json'
 process.env.WA_NUMERO ||= '51912980371'
 
 const { crearBot } = await import('../src/bot.js')
 const { store } = await import('../src/store.js')
+const { historial } = await import('../src/historial.js')
 const { config } = await import('../src/config.js')
 
 const PANEL = '51912980371@s.whatsapp.net'
@@ -50,7 +52,7 @@ function reset (modo = 'aprobacion') {
 }
 
 test.beforeEach(() => reset())
-test.after(() => { store.detener(); fs.rmSync('data/test-flujo.json', { force: true }) })
+test.after(() => { store.detener(); historial.detener(); fs.rmSync('data/test-flujo.json', { force: true }); fs.rmSync('data/test-flujo-hist.json', { force: true }) })
 
 test('modo aprobación: al cliente no le llega nada hasta que tú digas', async () => {
   const { bot, alPanel, alCliente } = nuevoBot()

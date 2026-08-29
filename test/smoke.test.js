@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 process.env.WA_ESTADO = 'data/test-smoke.json'
+process.env.WA_HISTORIAL = 'data/test-smoke-hist.json'
 process.env.WA_NUMERO ||= '51912980371'
 process.env.EMPRESA_NOMBRE ||= 'Rasterizar S.A.C.'
 
@@ -10,6 +11,7 @@ const { redactar, detectarLinea, fueraDeHorario } = await import('../src/comerci
 const { extraerTexto, tipoDe, idCitado, esGrupo, demoraNatural } = await import('../src/wa.js')
 const { esComando, ejecutarComando, resolverCitado } = await import('../src/panel.js')
 const { store } = await import('../src/store.js')
+const { historial } = await import('../src/historial.js')
 
 test('detecta la línea de negocio, con y sin tildes', () => {
   assert.equal(detectarLinea('quiero una gigantografía 3x2').id, 'gigantografia')
@@ -126,4 +128,4 @@ test('los borradores viejos se descartan', () => {
   assert.equal(store.verPendiente(id), undefined)
 })
 
-test.after(() => { store.detener(); fs.rmSync('data/test-smoke.json', { force: true }) })
+test.after(() => { store.detener(); historial.detener(); fs.rmSync('data/test-smoke.json', { force: true }); fs.rmSync('data/test-smoke-hist.json', { force: true }) })

@@ -15,6 +15,7 @@ ni paneles web.
 | ¿El bot manda cosas sin permiso? | **No**, en el modo por defecto (*aprobación*) te muestra el borrador y espera tu **ok**. |
 | ¿Desde dónde lo manejo? | Desde tu chat **"Mensajes contigo mismo"** en WhatsApp. Ahí escribes `.menu` y sale el panel. |
 | ¿Puedo apagarlo? | `.off` y no responde a nadie. `.on` y vuelve. |
+| ¿Quién redacta? | **Claude**, con las reglas y los precios de Rasterizar — si conectas la API key. Sin ella, plantillas fijas. |
 
 ---
 
@@ -108,6 +109,8 @@ la lista de contactos) y escribe los comandos ahí.
 | `.pausa 51987654321 120` | Callar ese chat 120 minutos (lo atiendes tú) |
 | `.reanudar 51987654321` | Volver a atenderlo automáticamente |
 | `.enviar 51987654321 \| Buenos días, le escribo de Rasterizar` | Mandar un mensaje a un cliente. Ese chat queda en tus manos 60 min |
+| `.cotiza 51987654321` | Claude relee ese chat y redacta la cotización |
+| `.cotiza 51987654321 \| el m² va S/ 25` | Lo mismo, con tu instrucción |
 
 ### Cuando el bot te pide permiso
 
@@ -138,16 +141,72 @@ También sirve escribir `.ok 7`, `.no 7` o `.ok 7 texto corregido`.
 
 ---
 
-## Qué responde el bot
+## Que Claude redacte las cotizaciones
 
-Sigue las reglas comerciales de Rasterizar. Reconoce **gigantografías,
-letras corpóreas, señalética de Defensa Civil, viniles y rotulado vehicular,
-mobiliario retail, impresión UV y servicios generales**, y para cada línea
-pide los datos que faltan para cotizar (medidas, cantidad, material,
-ubicación).
+Esta es la parte importante. Con una API key de Anthropic, quien redacta ya no
+es una plantilla: es Claude, leyendo **toda la conversación** con ese cliente y
+**tus precios reales**.
 
-**Nunca inventa un precio.** Si el cliente pregunta "¿cuánto cuesta?", pide
-los datos y te avisa a ti. Los precios los pones tú, siempre.
+### 1. Llena tus precios
+
+Abre `negocio/precios.md` y reemplaza los `S/ __` por tus precios. Es la única
+fuente que Claude puede usar para dar cifras. Formato libre — escribe como te
+sea cómodo.
+
+**Lo que no esté en ese archivo, Claude no lo inventa.** Te avisa a ti:
+
+```
+🔔 Mensaje nuevo — borrador #4
+👤 Ana Quispe · wa.me/51987654321
+💬 "cuánto el mesh"
+🏷️ ⚠️ Claude necesita un precio que no está en tu lista
+```
+
+### 2. Pon la API key
+
+Sácala en [console.anthropic.com](https://console.anthropic.com) y ponla en el
+`.env`:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Necesita crédito prepagado y **es aparte de tu suscripción de Claude**.
+Referencia de costo con `claude-opus-5`: del orden de un céntimo de sol por
+respuesta. Si quieres gastar menos, pon `WA_MODELO=claude-haiku-4-5`.
+
+### 3. Dale la orden cuando quieras
+
+Cuando llegue una consulta, Claude redacta solo y te pide el ok. Pero también
+puedes tomar tú la iniciativa desde el celular:
+
+```
+.cotiza 51987654321
+.cotiza 51987654321 | el m² de lona va S/ 25, agrégale instalación
+.cotiza 51987654321 | dile que el descuento es 10% si paga al contado
+```
+
+Claude relee todo el hilo con ese cliente, aplica tu instrucción, y te devuelve
+el borrador **al panel**. Nada sale sin tu ok.
+
+Lo que apruebes (o tu corrección) queda en el historial, así Claude no vuelve a
+pedir las medidas que el cliente ya dio.
+
+### Si Claude se cae
+
+Si la API falla —sin crédito, sin internet, lo que sea— el bot **no se queda
+mudo**: contesta con la plantilla de siempre y el aviso te dice qué pasó.
+
+---
+
+## Qué responde sin Claude
+
+Aun sin API key el bot funciona. Reconoce **gigantografías, letras corpóreas,
+señalética de Defensa Civil, viniles y rotulado vehicular, mobiliario retail,
+impresión UV y servicios generales**, y para cada línea pide los datos que
+faltan para cotizar.
+
+**Tampoco inventa precios**: pide los datos y te avisa.
 
 Si llega una **foto, audio o documento sin texto**, el bot no adivina: te lo
 pasa a ti y pausa ese chat.
@@ -165,6 +224,9 @@ pasa a ti y pausa ese chat.
 - **La carpeta `auth/` es tu sesión de WhatsApp.** Quien la copie puede leer y
   escribir por tu número. No la subas a GitHub (ya está en `.gitignore`) ni la
   compartas.
+- **`data/historial.json` guarda las conversaciones con tus clientes** en texto
+  plano, para que Claude tenga contexto. Está en `.gitignore`, pero tenlo en
+  cuenta si compartes esa carpeta o haces respaldos.
 - **La alternativa oficial** es la WhatsApp Cloud API de Meta, pero exige
   migrar el número fuera de la app: perderías usar el 912 980 371 desde tu
   celular. Por eso no se eligió.
@@ -186,19 +248,26 @@ pasa a ti y pausa ese chat.
 ## Para el que toque el código
 
 ```
-src/config.js      lee el .env
-src/comercial.js   redacta las respuestas (catálogo y reglas de negocio)
-src/panel.js       los comandos que escribes desde el celular
-src/bot.js         decide qué hacer con cada mensaje (sin tocar el socket)
-src/wa.js          utilidades sobre los mensajes de Baileys
-src/index.js       conexión, vinculación y reconexión
-test/              39 pruebas, corren sin conectarse a WhatsApp
+src/config.js         lee el .env
+src/claude.js         llama a Claude con las reglas y precios de Rasterizar
+src/claude-formato.js interpreta lo que Claude devuelve
+src/comercial.js      plantillas de respaldo (catálogo y reglas de negocio)
+src/historial.js      memoria de cada conversación
+src/panel.js          los comandos que escribes desde el celular
+src/bot.js            decide qué hacer con cada mensaje (sin tocar el socket)
+src/wa.js             utilidades sobre los mensajes de Baileys
+src/index.js          conexión, vinculación y reconexión
+negocio/precios.md    tus precios — la única fuente de cifras
+test/                 53 pruebas, sin conectarse a WhatsApp ni a la API
 ```
 
 ```bash
 npm test
 ```
 
-Para cambiar lo que responde el bot, edita el arreglo `LINEAS` en
-`src/comercial.js`: cada entrada tiene las palabras que la disparan y los
-datos que se le piden al cliente.
+Para cambiar cómo redacta Claude, edita la función `instrucciones()` en
+`src/claude.js`. Para las plantillas de respaldo, el arreglo `LINEAS` en
+`src/comercial.js`.
+
+Las pruebas usan un doble de Claude (`test/falso-claude.js`), así que corren
+gratis y sin red.

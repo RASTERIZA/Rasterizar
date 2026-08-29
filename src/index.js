@@ -24,6 +24,7 @@ import { config } from './config.js'
 import { store } from './store.js'
 import { MENU, numeroDe } from './panel.js'
 import { espera, demoraNatural } from './wa.js'
+import { claudeActivo, preciosSinLlenar } from './claude.js'
 import { crearBot } from './bot.js'
 
 const logger = pino({ level: process.env.LOG_LEVEL || 'warn' })
@@ -112,13 +113,23 @@ El código vence en pocos minutos. Si expira, vuelve a ejecutar: npm run vincula
       bot.setPanel(panel)
 
       const e = store.get()
+      const quienRedacta = claudeActivo() ? `Claude (${config.claude.modelo})` : 'plantillas fijas'
       console.log(`\n✅ Conectado como ${numeroDe(propio)} — modo ${e.modo}, bot ${e.encendido ? 'encendido' : 'apagado'}`)
+      console.log(`   Redacta: ${quienRedacta}`)
       console.log(`   Panel de control: chat de ${numeroDe(panel)}\n`)
+      if (claudeActivo() && preciosSinLlenar()) {
+        console.warn('⚠️  negocio/precios.md sigue con la plantilla sin llenar:')
+        console.warn('   Claude no podrá dar cifras hasta que pongas tus precios.\n')
+      }
 
       const viejos = store.limpiarPendientes(12)
       await enviar(panel,
         `🟢 *Bot de ${config.empresa.nombre} conectado*\n\n` +
         `Modo actual: *${e.modo}*\n` +
+        `Redacta: *${quienRedacta}*\n` +
+        (claudeActivo() && preciosSinLlenar()
+          ? '\n⚠️ *negocio/precios.md está sin llenar.* Claude te va a pedir cada precio en vez de cotizar solo.\n'
+          : '') +
         (viejos ? `(Descarté ${viejos} borrador(es) viejos)\n` : '') +
         `\n${MENU}`
       )

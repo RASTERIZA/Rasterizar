@@ -9,6 +9,8 @@ import { store } from './store.js'
 import { redactar, fueraDeHorario, avisoFueraDeHorario } from './comercial.js'
 import { esComando, ejecutarComando, resolverCitado, numeroDe } from './panel.js'
 import { extraerTexto, tipoDe, idCitado, esGrupo, esEstado, esBroadcast } from './wa.js'
+import { historial } from './historial.js'
+import { claudeActivo, redactarConClaude, preciosSinLlenar } from './claude.js'
 
 /**
  * @param {object} deps
@@ -27,6 +29,7 @@ export function crearBot ({ enviar, log = console.log }) {
   /** Envía y recuerda el id, para reconocer el eco después. */
   async function mandar (jid, texto, natural = false) {
     const r = await enviar(jid, texto, natural)
+    if (jid !== jidPanel) historial.apuntar(jid, 'nosotros', texto)
     const id = r?.key?.id
     if (id) {
       propios.add(id)
@@ -39,6 +42,82 @@ export function crearBot ({ enviar, log = console.log }) {
     if (!idMensaje) return
     avisos.set(idMensaje, idBorrador)
     if (avisos.size > 200) avisos.delete(avisos.keys().next().value)
+  }
+
+  /**
+   * Redacta el borrador. Con Claude si hay clave configurada; si Claude
+   * falla por lo que sea, cae a las plantillas para no dejar a Jorge colgado.
+   *
+   * @param {string} jid          chat del cliente
+   * @param {string} consulta     último mensaje del cliente
+   * @param {string} nombre       nombre en WhatsApp
+   * @param {string} instruccion  orden puntual de Jorge, si la hay
+   */
+  async function redactarBorrador (jid, consulta, nombre, instruccion = '') {
+    if (claudeActivo()) {
+      try {
+        const r = await redactarConClaude({
+          historial: historial.leer(jid),
+          nombre,
+          instruccion
+        })
+        return {
+          texto: r.texto,
+          linea: 'claude',
+          motivo: r.necesitaJorge
+            ? '⚠️ Claude necesita un precio que no está en tu lista'
+            : (instruccion ? 'Redactado con tu instrucción' : 'Redactado por Claude'),
+          necesitaJorge: r.necesitaJorge
+        }
+      } catch (e) {
+        log(`[claude] falló, uso plantilla: ${e?.message}`)
+        const base = redactar(consulta, { nombre })
+        return { ...base, motivo: `${base.motivo} (Claude falló: ${e?.message})` }
+      }
+    }
+    return redactar(consulta, { nombre })
+  }
+
+  /**
+   * `.cotiza 51987654321 | agrégale instalación`
+   *
+   * Jorge da la orden y Claude toma esa conversación: relee todo el hilo
+   * con el cliente y redacta. El borrador vuelve al panel para su visto bueno.
+   */
+  async function cotizarAPedido (numero, instruccion) {
+    const jid = `${String(numero).replace(/\D/g, '')}@s.whatsapp.net`
+
+    if (!claudeActivo()) {
+      await mandar(jidPanel,
+        '⚠️ Claude no está conectado. Falta poner ANTHROPIC_API_KEY en el archivo .env.\n' +
+        'Mientras tanto puedes escribirle tú: *.enviar ' + numeroDe(jid) + ' | tu mensaje*')
+      return
+    }
+
+    if (!historial.tieneCliente(jid)) {
+      await mandar(jidPanel,
+        `No tengo nada de ${numeroDe(jid)} en el historial, así que no sé qué cotizar.\n` +
+        'Si ya te escribió, revisa que el número esté bien. Si quieres escribirle tú: ' +
+        `*.enviar ${numeroDe(jid)} | tu mensaje*`)
+      return
+    }
+
+    const ultimo = [...historial.leer(jid)].reverse().find(m => m.de === 'cliente')?.texto || ''
+    const borrador = await redactarBorrador(jid, ultimo, '', instruccion)
+
+    const id = store.nuevoPendiente({ jid, nombre: '', texto: borrador.texto, consulta: ultimo })
+    const aviso = await mandar(jidPanel,
+      `📝 *Cotización lista* — borrador #${id}\n` +
+      `👤 wa.me/${numeroDe(jid)}\n` +
+      (instruccion ? `🗣️ Tu instrucción: "${instruccion}"\n` : '') +
+      `🏷️ ${borrador.motivo}\n` +
+      '─────────────────────\n' +
+      `${borrador.texto}\n` +
+      '─────────────────────\n' +
+      'Responde a este mensaje con *ok*, *no*, o el texto corregido.\n' +
+      `También: .ok ${id}  /  .no ${id}`
+    )
+    recordarAviso(aviso?.key?.id, id)
   }
 
   /** Aviso al dueño, sin borrador que aprobar. */
@@ -87,6 +166,13 @@ export function crearBot ({ enviar, log = console.log }) {
         }
       }
 
+      // .cotiza es tuyo: le das la orden y Claude toma esa conversación
+      const orden = texto.trim().match(/^[./!](cotiza|claude|redacta)\s+([^|]+)(?:\|\s*(.*))?$/is)
+      if (orden) {
+        await cotizarAPedido(orden[2].trim(), (orden[3] || '').trim())
+        return 'cotiza'
+      }
+
       if (esComando(texto)) {
         await aplicar(await ejecutarComando(texto))
         return 'comando'
@@ -121,6 +207,7 @@ export function crearBot ({ enviar, log = console.log }) {
     const consulta = texto || `(${clase})`
 
     log(`📩 ${numeroDe(jid)} (${nombre}): ${consulta.slice(0, 80)}`)
+    historial.apuntar(jid, 'cliente', consulta)
 
     // Fotos, audios y documentos los ves tú: el bot no adivina qué traen
     const necesitaOjoHumano = !texto && clase !== 'texto'
@@ -138,7 +225,7 @@ export function crearBot ({ enviar, log = console.log }) {
       return necesitaOjoHumano ? 'humano' : 'manual'
     }
 
-    const borrador = redactar(consulta, { nombre })
+    const borrador = await redactarBorrador(jid, consulta, nombre)
 
     if (e.modo === 'auto') {
       await mandar(jid, borrador.texto, true)
@@ -157,7 +244,9 @@ export function crearBot ({ enviar, log = console.log }) {
       '─────────────────────\n' +
       `${borrador.texto}\n` +
       '─────────────────────\n' +
-      'Responde a este mensaje con *ok*, *no*, o el texto corregido.\n' +
+      (borrador.necesitaJorge
+        ? 'Pásame el precio y lo rehago: *.cotiza ' + numeroDe(jid) + ' | el m² de lona va S/ 25*\n'
+        : 'Responde a este mensaje con *ok*, *no*, o el texto corregido.\n') +
       `También: .ok ${id}  /  .no ${id}`
     )
     recordarAviso(aviso?.key?.id, id)
