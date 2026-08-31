@@ -79,20 +79,15 @@ cat <<TEXTO
   INSTALACIÓN TERMINADA
 ════════════════════════════════════════════════════════════════
 
-Faltan 3 pasos que solo puedes hacer tú:
+Ahora corre el asistente. Te pregunta tus precios y tu clave de
+Claude, y escribe los archivos por ti (no tienes que editar nada
+a mano):
 
-1) TUS PRECIOS
-   nano $DESTINO/negocio/precios.md
-   Reemplaza los "S/ __" por tus precios reales.
-   (Para guardar en nano: Ctrl+O, Enter, Ctrl+X)
+   cd $DESTINO && bash configurar.sh
 
-2) TU CLAVE DE CLAUDE  — opcional, pero es lo que hace que redacte bien
-   nano $DESTINO/.env
-   Pega tu clave en la línea ANTHROPIC_API_KEY=
-   La sacas en https://console.anthropic.com (necesita crédito cargado)
+Y al terminar, el único paso que nadie puede hacer por ti:
 
-3) VINCULAR TU WHATSAPP
-   cd $DESTINO && npm run vincular
+   npm run vincular
 
    Sale un código de 8 dígitos. En tu celular:
    WhatsApp → Ajustes → Dispositivos vinculados → Vincular dispositivo

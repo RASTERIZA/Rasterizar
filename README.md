@@ -71,9 +71,27 @@ Entras por SSH (el proveedor te da usuario y contraseña) y pegas:
 curl -fsSL https://raw.githubusercontent.com/RASTERIZA/Rasterizar/claude/whatsapp-github-install-w63efe/instalar.sh | bash
 ```
 
-Eso instala Node, descarga el proyecto, las dependencias y pm2. Al terminar te
-imprime los 3 pasos que faltan: tus precios, tu clave de Claude y vincular el
-celular.
+Eso instala Node, descarga el proyecto, las dependencias y pm2.
+
+Después corres el asistente, que te pregunta tus precios y tu clave de Claude
+y escribe los archivos solo — sin pelear con `nano`:
+
+```bash
+cd ~/rasterizar-whatsapp && bash configurar.sh
+```
+
+```
+GIGANTOGRAFÍAS  (precio por m²)
+   Lona front impresa: 25
+   Lona mesh: 32
+   Instalación por m²: 10
+```
+
+Lo que dejes en blanco simplemente no entra al archivo, y Claude te lo
+preguntará a ti cuando un cliente lo pida. Puedes volver a correrlo cuando
+cambies un precio (guarda un respaldo del anterior).
+
+Al terminar queda un solo paso: `npm run vincular`.
 
 ---
 
@@ -183,9 +201,9 @@ es una plantilla: es Claude, leyendo **toda la conversación** con ese cliente y
 
 ### 1. Llena tus precios
 
-Abre `negocio/precios.md` y reemplaza los `S/ __` por tus precios. Es la única
-fuente que Claude puede usar para dar cifras. Formato libre — escribe como te
-sea cómodo.
+Lo más fácil es `bash configurar.sh`, que te los pregunta uno por uno. Si
+prefieres, edita `negocio/precios.md` a mano: es formato libre, escribe como
+te sea cómodo. Es la única fuente que Claude puede usar para dar cifras.
 
 **Lo que no esté en ese archivo, Claude no lo inventa.** Te avisa a ti:
 
@@ -292,6 +310,8 @@ src/bot.js            decide qué hacer con cada mensaje (sin tocar el socket)
 src/wa.js             utilidades sobre los mensajes de Baileys
 src/index.js          conexión, vinculación y reconexión
 negocio/precios.md    tus precios — la única fuente de cifras
+instalar.sh           deja listo un servidor Ubuntu vacío
+configurar.sh         asistente: pregunta precios y clave, escribe los archivos
 test/                 53 pruebas, sin conectarse a WhatsApp ni a la API
 ```
 
