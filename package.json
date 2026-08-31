@@ -8,7 +8,8 @@
     "start": "node src/index.js",
     "vincular": "node src/index.js",
     "salir": "rm -rf auth && echo 'Sesión borrada. Ejecuta: npm run vincular'",
-    "pm2": "npx pm2 start ecosystem.config.cjs"
+    "pm2": "npx pm2 start ecosystem.config.cjs",
+    "revisar": "bash revisar.sh"
   },
   "repository": {
     "type": "git",

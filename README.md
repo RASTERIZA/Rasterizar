@@ -310,6 +310,7 @@ pasa a ti y pausa ese chat.
 | "La sesión se cerró desde el celular" | Alguien desvinculó el dispositivo. `npm run salir` y vincular otra vez |
 | El bot no responde | `.estado` en tu chat. Revisa que diga *encendido* y que el chat no esté en pausa |
 | Ver qué está pasando | `pm2 logs rasterizar-wa` |
+| Saber en qué estado quedó todo | `npm run revisar` |
 
 ---
 
@@ -327,6 +328,7 @@ src/wa.js             utilidades sobre los mensajes de Baileys
 src/index.js          conexión, vinculación y reconexión
 negocio/precios.md    tus precios — la única fuente de cifras
 empezar.sh            instalación completa en un comando (Mac y Linux)
+revisar.sh            dice qué falta: vinculación, precios, clave, proceso
 instalar.sh           deja listo un servidor Ubuntu vacío
 configurar.sh         asistente: pregunta precios y clave, escribe los archivos
 test/                 53 pruebas, sin conectarse a WhatsApp ni a la API
