@@ -41,6 +41,22 @@ apuntan a Baileys, porque lo llevan adentro.
 
 ---
 
+## Instalación — un solo comando
+
+Abre la Terminal (en Mac: `Cmd+Espacio` → *Terminal*) y pega esto:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RASTERIZA/Rasterizar/claude/whatsapp-github-install-w63efe/empezar.sh | bash
+```
+
+Crea la carpeta `~/Rasterizar-WhatsApp`, instala todo y te pregunta tus
+precios. Funciona igual en Mac y en Linux. Al terminar queda un solo paso:
+`npm run vincular`.
+
+Si te falta Node.js o git, el script te dice exactamente qué hacer.
+
+---
+
 ## Dónde ponerlo a correr
 
 El bot necesita una máquina prendida las 24 horas. Si la apagas, deja de
@@ -310,6 +326,7 @@ src/bot.js            decide qué hacer con cada mensaje (sin tocar el socket)
 src/wa.js             utilidades sobre los mensajes de Baileys
 src/index.js          conexión, vinculación y reconexión
 negocio/precios.md    tus precios — la única fuente de cifras
+empezar.sh            instalación completa en un comando (Mac y Linux)
 instalar.sh           deja listo un servidor Ubuntu vacío
 configurar.sh         asistente: pregunta precios y clave, escribe los archivos
 test/                 53 pruebas, sin conectarse a WhatsApp ni a la API
