@@ -41,11 +41,45 @@ apuntan a Baileys, porque lo llevan adentro.
 
 ---
 
-## Instalación (una sola vez)
+## Dónde ponerlo a correr
 
-Necesitas una computadora o un VPS con **Node.js 20 o superior** que quede
-prendido. Si apagas la máquina, el bot deja de responder (tu WhatsApp del
-celular sigue igual de normal).
+El bot necesita una máquina prendida las 24 horas. Si la apagas, deja de
+responder (tu WhatsApp del celular sigue igual de normal).
+
+**Si no tienes dónde dejar una PC prendida — que es lo normal — usa un VPS.**
+Es un servidor en la nube que nunca se apaga, por unos **$5 al mes**:
+
+| Proveedor | Plan | Precio aprox. |
+|---|---|---|
+| [Hetzner](https://www.hetzner.com/cloud) | CX22 | ~$4.5 /mes |
+| [DigitalOcean](https://www.digitalocean.com) | Basic 1 GB | ~$6 /mes |
+| [Vultr](https://www.vultr.com) | Cloud Compute 1 GB | ~$6 /mes |
+| [Contabo](https://contabo.com) | VPS S | ~$5 /mes |
+
+Pide **Ubuntu 22.04 o 24.04**. Con 1 GB de RAM sobra: el bot usa ~150 MB.
+
+> ⚠️ **No sirven los planes gratuitos de Railway, Render o Heroku.** Borran el
+> disco en cada reinicio, y ahí vive la sesión de WhatsApp (`auth/`): tendrías
+> que volver a vincular el celular cada dos por tres. El bot necesita un disco
+> que se quede.
+
+### Instalación en el VPS — un solo comando
+
+Entras por SSH (el proveedor te da usuario y contraseña) y pegas:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RASTERIZA/Rasterizar/claude/whatsapp-github-install-w63efe/instalar.sh | bash
+```
+
+Eso instala Node, descarga el proyecto, las dependencias y pm2. Al terminar te
+imprime los 3 pasos que faltan: tus precios, tu clave de Claude y vincular el
+celular.
+
+---
+
+## Instalación a mano (en tu propia PC)
+
+Necesitas **Node.js 20 o superior**.
 
 ```bash
 git clone https://github.com/RASTERIZA/Rasterizar.git
