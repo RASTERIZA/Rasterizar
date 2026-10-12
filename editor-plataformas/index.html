@@ -8,6 +8,7 @@
 :root{
   --bg:#14161c; --panel:#1d2029; --panel2:#262a36; --line:#343a4a; --txt:#e8eaf0; --mut:#9aa1b4;
   --acc:#ffb300; --acc2:#3d8bff; --ok:#3ecf6e;
+  color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
@@ -48,6 +49,12 @@ footer{grid-column:1/4;display:flex;gap:18px;padding:5px 12px;background:var(--p
 footer .msg{color:var(--ok)}
 .help{font-size:12px;color:var(--mut);line-height:1.5}
 .help kbd{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:0 4px;font:11px monospace;color:var(--txt)}
+#dlg{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+#dlg[hidden]{display:none}
+#dlg .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;max-width:520px;width:100%;display:flex;flex-direction:column;gap:12px}
+#dlg p{margin:0;line-height:1.5}
+#dlg textarea{width:100%;height:30vh;font:12px/1.4 monospace;color:var(--txt);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px;resize:none}
+#dlg .acts{display:flex;gap:8px;justify-content:flex-end}
 #play{position:fixed;inset:0;background:#000;z-index:10;display:none}
 #play.on{display:block}
 #play canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;touch-action:none;-webkit-user-select:none;user-select:none}
@@ -148,6 +155,9 @@ body{height:100dvh}
   <span id="stZoom"></span>
   <span class="msg" id="stMsg"></span>
 </footer>
+
+<div id="dlg" hidden><div class="box" role="dialog" aria-modal="true"><p id="dMsg"></p><textarea id="dText" readonly hidden></textarea>
+  <div class="acts"><button id="dCopy" hidden>Copiar</button><button id="dNo" hidden>Cancelar</button><button id="dOk" class="primary">Aceptar</button></div></div></div>
 
 <div id="play"><canvas id="game"></canvas><div class="hint">Esc: volver al editor</div></div>
 
@@ -688,6 +698,9 @@ return {run, Sprites, T, TS, DEFAULTS, isSolid};
 const {Sprites, TS, DEFAULTS} = Engine;
 const $ = id => document.getElementById(id);
 const STORE = 'plataformas.nivel.v1';
+// En visores que bloquean descargas (p. ej. páginas incrustadas) se ofrece copiar el texto en lugar de descargarlo.
+const COPY_MODE = false || !!window.claude;
+let dlgOpen = false;
 
 /* ---------- Catálogo de elementos ---------- */
 const PALETTE = [
@@ -969,7 +982,7 @@ $('hscroll').addEventListener('input', e => { view.x = +e.target.value - 64; dir
 
 /* ---------- Teclado ---------- */
 window.addEventListener('keydown', e => {
-  if (playing) return;
+  if (playing || dlgOpen) return;
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== 'range' && e.target.type !== 'color';
   if (e.code === 'Space' && !typing) { spaceDown = true; cv.style.cursor = 'grab'; if (e.target === document.body) e.preventDefault(); }
   if (typing) return;
@@ -1049,26 +1062,47 @@ function summary() {
   $('summary').innerHTML = `Monedas: <b>${coins}</b> · Bloques: <b>${blocks}</b> · Enemigos: <b>${en}</b>` +
     (warn.length ? '<br><span style="color:#ff8a6a">⚠ ' + warn.join('<br>⚠ ') + '</span>' : '<br><span style="color:#3ecf6e">✓ Nivel listo para jugar</span>');
 }
+function dialog(text, o) {
+  o = o || {};
+  return new Promise(resolve => {
+    const box = $('dlg'), ta = $('dText'), done = v => { box.hidden = true; dlgOpen = false; resolve(v); };
+    $('dMsg').textContent = text;
+    ta.hidden = o.text == null; ta.value = o.text == null ? '' : o.text;
+    $('dCopy').hidden = o.text == null; $('dNo').hidden = !o.confirm;
+    $('dOk').textContent = o.confirm ? 'Aceptar' : 'Cerrar';
+    $('dOk').onclick = () => done(true); $('dNo').onclick = () => done(false);
+    $('dCopy').onclick = () => {
+      ta.select();
+      const ok = () => { $('dCopy').textContent = '¡Copiado!'; };
+      try { navigator.clipboard.writeText(o.text).then(ok, () => { try { document.execCommand('copy'); ok(); } catch (e) { /* queda seleccionado */ } }); }
+      catch (e) { try { document.execCommand('copy'); ok(); } catch (e2) { /* queda seleccionado */ } }
+    };
+    $('dCopy').textContent = 'Copiar';
+    dlgOpen = true; box.hidden = false; (o.text == null ? $('dOk') : $('dCopy')).focus();
+  });
+}
 function msg(t) { const m = $('stMsg'); m.textContent = t; clearTimeout(msg.t); msg.t = setTimeout(() => { m.textContent = ''; }, 3500); }
 
 /* ---------- Archivos ---------- */
 const slug = s => (s || 'nivel').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'nivel';
 function download(name, text, type) {
+  if (COPY_MODE) { dialog('Este visor no permite descargar archivos. Copia el texto y guárdalo como «' + name + '».', {text}); return false; }
   const a = document.createElement('a'), url = URL.createObjectURL(new Blob([text], {type}));
   a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return true;
 }
-function saveFile() { download(slug(L.name) + '.json', JSON.stringify(L), 'application/json'); msg('Nivel guardado como ' + slug(L.name) + '.json'); }
+function saveFile() { if (download(slug(L.name) + '.json', JSON.stringify(L), 'application/json')) msg('Nivel guardado como ' + slug(L.name) + '.json'); }
 function openFile(e) {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   const rd = new FileReader();
   rd.onload = () => {
     try { L = validate(JSON.parse(rd.result)); undoStack.length = redoStack.length = 0; view.x = -16; view.y = 0; changed(); refreshUi(); msg('Nivel abierto: ' + L.name); }
-    catch (err) { alert('No se pudo abrir el archivo: ' + err.message); }
+    catch (err) { dialog('No se pudo abrir el archivo: ' + err.message); }
   };
   rd.readAsText(f);
 }
-function newLevel() {
-  if (!confirm('¿Crear un nivel nuevo? Se perderán los cambios no guardados.')) return;
+async function newLevel() {
+  if (!await dialog('¿Crear un nivel nuevo? Se perderán los cambios no guardados.', {confirm: true})) return;
   L = emptyLevel(80, 15); undoStack.length = redoStack.length = 0; view.x = -16; view.y = 0; changed(); refreshUi();
 }
 function exportGame() {
@@ -1077,7 +1111,7 @@ function exportGame() {
   const html = '<!doctype html>\n<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">' +
     '<title>' + title + '</title><style>html,body{margin:0;height:100%;background:#000;overflow:hidden}canvas{display:block;width:100vw;height:100vh;height:100dvh;image-rendering:pixelated;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}</style></head>' +
     '<body><canvas id="c"></canvas><script>' + engine + '<\/script><script>Engine.run(document.getElementById("c"),' + lvl + ');<\/script></body></html>';
-  download(slug(L.name) + '-juego.html', html, 'text/html'); msg('Juego exportado: ábrelo con doble clic en cualquier navegador.');
+  if (download(slug(L.name) + '-juego.html', html, 'text/html')) msg('Juego exportado: ábrelo con doble clic en cualquier navegador.');
 }
 
 /* ---------- Probar ---------- */
