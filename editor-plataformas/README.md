@@ -31,6 +31,14 @@ Mover `←` `→` o `A` `D` · Saltar `Espacio`, `↑` o `Z` · Correr `Shift` o
 
 Reglas: pisar al enemigo lo elimina; el hongo hace crecer al jugador (puede romper ladrillos y aguantar un golpe); caer al vacío, tocar pinchos o agotar el tiempo cuesta una vida; tocar la meta completa el nivel.
 
+## En el celular o la tablet
+
+Funciona en el navegador del teléfono (Chrome, Safari, etc.).
+
+- **Editor:** un dedo dibuja con la herramienta elegida; dos dedos mueven y hacen zoom; la herramienta **✋ Mover** desplaza con un solo dedo; **🧽 Goma** borra (no hay clic derecho).
+- **Juego:** al tocar la pantalla aparecen los botones ◀ ▶ (mover), SALTO y CORRER (se pueden pulsar varios a la vez), además de pausa y salir. Conviene girar el celular en horizontal.
+- **Exportar juego** descarga un `.html` que también se juega con los botones táctiles. En iPhone/iPad puede ser más cómodo abrirlo desde la app Archivos o publicarlo en una página web.
+
 ## Notas técnicas
 
 - Un solo archivo (`index.html`), sin dependencias. Todos los gráficos y sonidos se generan por código, así que no hay imágenes ni audio externos.
